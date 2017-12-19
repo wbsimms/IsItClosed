@@ -36,7 +36,6 @@ namespace IsItClosed
         private MediaCapture mediaCapture;
         private StorageFile photoFile;
         private string PHOTO_FILE_NAME = "garage.jpg";
-        private static BackgroundTaskDeferral deferral;
         private static string storageKey = "tFkjmym5qTXZSuA9UGHJlFWINjPB4Bcn4j1DVxAbz/7EQGnTz4P0sZZ21Eb49y6upWPZbbUOHlsA/Zxc2t5ciA==";
 
         public MainPage()
@@ -54,18 +53,15 @@ namespace IsItClosed
             await PeriodicTask.Run(() =>
             {
                 takePhoto_Click(null, null);
-            }, TimeSpan.FromMinutes(1));
+            }, TimeSpan.FromMinutes(2));
         }
 
         private async void takePhoto_Click(object sender, TextChangedEventArgs e)
         {
-            // ...  
 
             photoFile = await KnownFolders.PicturesLibrary.CreateFileAsync(
                 PHOTO_FILE_NAME, CreationCollisionOption.GenerateUniqueName);
             ImageEncodingProperties imageProperties = ImageEncodingProperties.CreateJpeg();
-            //bool hasTorch = mediaCapture.VideoDeviceController.TorchControl.Supported;
-            
             await mediaCapture.CapturePhotoToStorageFileAsync(imageProperties, photoFile);
 
             IRandomAccessStream photoStream = await photoFile.OpenReadAsync();
@@ -74,30 +70,18 @@ namespace IsItClosed
             captureImage.Source = bitmap;
             photoStream.Dispose();
 
-
             using (Stream photoStream2 = await photoFile.OpenStreamForReadAsync())
             {
                 await UploadFileToStorage(photoStream2, PHOTO_FILE_NAME);
             }
-
-
         }
 
         public static async Task<bool> UploadFileToStorage(Stream fileStream, string fileName)
         {
-            // Create storagecredentials object by reading the values from the configuration (appsettings.json)
             StorageCredentials storageCredentials = new StorageCredentials("devfoundriesdev", storageKey);
-
-            // Create cloudstorage account by passing the storagecredentials
             CloudStorageAccount storageAccount = new CloudStorageAccount(storageCredentials, true);
-
-            // Create the blob client.
             CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-
-            // Get reference to the blob container by passing the name by reading the value from the configuration (appsettings.json)
             CloudBlobContainer container = blobClient.GetContainerReference("isitclosed");
-
-            // Get the reference to the block blob from the container
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
 
             try
@@ -106,11 +90,7 @@ namespace IsItClosed
             }
             catch (Exception e)
             {
-                
-                
             }
-            // Upload the file
-
             return await Task.FromResult(true);
         }
     }
