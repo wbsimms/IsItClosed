@@ -5,13 +5,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using IsItClosedWeb.Models;
+using IsItClosedWeb.Services;
 
 namespace IsItClosedWeb.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            string ts = await new BlobInformation().GetInformation();
+            ViewData["TimeStamp"] = ts;
             return View();
         }
 
