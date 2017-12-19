@@ -28,8 +28,8 @@ namespace IsItClosedWeb.Services
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(PHOTO_FILE_NAME);
 
             await blockBlob.FetchAttributesAsync();
-            var lastMod = blockBlob.Properties.LastModified.Value.ToString();
-            var toString = lastMod;
+            var lastMod = blockBlob.Properties.LastModified.Value.ToOffset(TimeSpan.FromHours(4));
+            var toString = lastMod.ToString();
             return toString;
         }
     }
