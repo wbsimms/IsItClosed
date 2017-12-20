@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Background;
 using Windows.Foundation;
@@ -37,30 +38,43 @@ namespace IsItClosed
         private StorageFile photoFile;
         private string PHOTO_FILE_NAME = "garage.jpg";
         private static string storageKey = "tFkjmym5qTXZSuA9UGHJlFWINjPB4Bcn4j1DVxAbz/7EQGnTz4P0sZZ21Eb49y6upWPZbbUOHlsA/Zxc2t5ciA==";
+        private bool IsStarted = false;
+        private CancellationTokenSource cancellationToken;
 
         public MainPage()
         {
             this.InitializeComponent();
-
+            StartButton_OnClick(null,null);
         }
 
         private async void StartButton_OnClick(object sender, RoutedEventArgs e)
         {
-            mediaCapture = new MediaCapture();
-            await mediaCapture.InitializeAsync();
-
-
-            await PeriodicTask.Run(() =>
+            if (!IsStarted)
             {
-                takePhoto_Click(null, null);
-            }, TimeSpan.FromMinutes(2));
+                cancellationToken = new CancellationTokenSource();
+                IsStarted = true;
+                mediaCapture = new MediaCapture();
+                await mediaCapture.InitializeAsync();
+                await PeriodicTask.Run(() =>
+                {
+                    takePhoto_Click(null, null);
+                }, TimeSpan.FromMinutes(2), cancellationToken.Token);
+                this.StartButton.Content = "Stop";
+            }
+            else
+            {
+                cancellationToken.Cancel();
+                IsStarted = false;
+                this.StartButton.Content = "Start";
+            }
+
         }
 
         private async void takePhoto_Click(object sender, TextChangedEventArgs e)
         {
 
             photoFile = await KnownFolders.PicturesLibrary.CreateFileAsync(
-                PHOTO_FILE_NAME, CreationCollisionOption.GenerateUniqueName);
+                PHOTO_FILE_NAME, CreationCollisionOption.ReplaceExisting);
             ImageEncodingProperties imageProperties = ImageEncodingProperties.CreateJpeg();
             await mediaCapture.CapturePhotoToStorageFileAsync(imageProperties, photoFile);
 
