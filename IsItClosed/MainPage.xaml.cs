@@ -55,11 +55,19 @@ namespace IsItClosed
                 IsStarted = true;
                 mediaCapture = new MediaCapture();
                 await mediaCapture.InitializeAsync();
-                await PeriodicTask.Run(() =>
-                {
-                    takePhoto_Click(null, null);
-                }, TimeSpan.FromMinutes(2), cancellationToken.Token);
                 this.StartButton.Content = "Stop";
+                try
+                {
+                    await PeriodicTask.Run(() =>
+                    {
+                        takePhoto_Click(null, null);
+                    }, TimeSpan.FromMinutes(2), cancellationToken.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    IsStarted = false;
+                    this.StartButton.Content = "Start";
+                }
             }
             else
             {
