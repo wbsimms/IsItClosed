@@ -10,13 +10,11 @@ namespace IsItClosedWeb.Services
 {
     public class BlobInformation
     {
-
         private string PHOTO_FILE_NAME = "garage.jpg";
         private static string storageKey = "tFkjmym5qTXZSuA9UGHJlFWINjPB4Bcn4j1DVxAbz/7EQGnTz4P0sZZ21Eb49y6upWPZbbUOHlsA/Zxc2t5ciA==";
 
         public BlobInformation()
         {
-            
         }
 
         public async Task<string> GetInformation()
@@ -28,8 +26,9 @@ namespace IsItClosedWeb.Services
             CloudBlockBlob blockBlob = container.GetBlockBlobReference(PHOTO_FILE_NAME);
 
             await blockBlob.FetchAttributesAsync();
-            var lastMod = blockBlob.Properties.LastModified.Value.ToOffset(TimeSpan.FromHours(4));
-            var toString = lastMod.ToString();
+            var lastMod = blockBlob.Properties.LastModified.Value;
+            var cstDate = lastMod.Subtract(TimeSpan.FromHours(6));
+            var toString = cstDate.ToString();
             return toString;
         }
     }
