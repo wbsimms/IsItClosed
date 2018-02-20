@@ -55,6 +55,28 @@ namespace IsItClosed
                 IsStarted = true;
                 mediaCapture = new MediaCapture();
                 await mediaCapture.InitializeAsync();
+                if (mediaCapture.VideoDeviceController.ExposurePriorityVideoControl.Supported)
+                {
+                    mediaCapture.VideoDeviceController.ExposurePriorityVideoControl.Enabled = true;
+                    mediaCapture.VideoDeviceController.FlashControl.Auto = true;
+
+                }
+                mediaCapture.VideoDeviceController.BacklightCompensation.TrySetAuto(true);
+                mediaCapture.VideoDeviceController.Exposure.TrySetAuto(true);
+                mediaCapture.VideoDeviceController.Brightness.TrySetAuto(true);
+                mediaCapture.VideoDeviceController.Contrast.TrySetAuto(true);
+                if (mediaCapture.VideoDeviceController.ExposureControl.Supported)
+                {
+                    await mediaCapture.VideoDeviceController.ExposureControl.SetAutoAsync(true);
+                }
+                mediaCapture.VideoDeviceController.Focus.TrySetAuto(true);
+                mediaCapture.VideoDeviceController.WhiteBalance.TrySetAuto(true);
+
+                if (mediaCapture.VideoDeviceController.FlashControl.Supported)
+                {
+                    mediaCapture.VideoDeviceController.FlashControl.Auto = true;
+                }
+
                 this.StartButton.Content = "Stop";
                 try
                 {
@@ -71,6 +93,7 @@ namespace IsItClosed
             }
             else
             {
+                mediaCapture.Dispose();
                 cancellationToken.Cancel();
                 IsStarted = false;
                 this.StartButton.Content = "Start";
