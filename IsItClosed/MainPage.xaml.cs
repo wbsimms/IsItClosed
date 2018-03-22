@@ -35,7 +35,6 @@ namespace IsItClosed
     public sealed partial class MainPage : Page
     {
         private MediaCapture mediaCapture;
-        private StorageFile photoFile;
         private string PHOTO_FILE_NAME = "garage.jpg";
         private static string storageKey = "tFkjmym5qTXZSuA9UGHJlFWINjPB4Bcn4j1DVxAbz/7EQGnTz4P0sZZ21Eb49y6upWPZbbUOHlsA/Zxc2t5ciA==";
         private bool IsStarted = false;
@@ -53,40 +52,21 @@ namespace IsItClosed
             {
                 cancellationToken = new CancellationTokenSource();
                 IsStarted = true;
-                mediaCapture = new MediaCapture();
-                await mediaCapture.InitializeAsync();
-                if (mediaCapture.VideoDeviceController.ExposurePriorityVideoControl.Supported)
-                {
-                    mediaCapture.VideoDeviceController.ExposurePriorityVideoControl.Enabled = true;
-                    mediaCapture.VideoDeviceController.FlashControl.Auto = true;
-
-                }
-                mediaCapture.VideoDeviceController.BacklightCompensation.TrySetAuto(true);
-                mediaCapture.VideoDeviceController.Exposure.TrySetAuto(true);
-                mediaCapture.VideoDeviceController.Brightness.TrySetAuto(true);
-                mediaCapture.VideoDeviceController.Contrast.TrySetAuto(true);
-                if (mediaCapture.VideoDeviceController.ExposureControl.Supported)
-                {
-                    await mediaCapture.VideoDeviceController.ExposureControl.SetAutoAsync(true);
-                }
-                mediaCapture.VideoDeviceController.Focus.TrySetAuto(true);
-                mediaCapture.VideoDeviceController.WhiteBalance.TrySetAuto(true);
-
-                if (mediaCapture.VideoDeviceController.FlashControl.Supported)
-                {
-                    mediaCapture.VideoDeviceController.FlashControl.Auto = true;
-                }
+//                CreateMediaCapture();
 
                 this.StartButton.Content = "Stop";
                 try
                 {
-                    await PeriodicTask.Run(() =>
+                    await PeriodicTask.Run(async () =>
                     {
-                        takePhoto_Click(null, null);
+                        await CreateMediaCapture();
+                        await TakePhoto_Click(null, null);
+                        mediaCapture.Dispose();
                     }, TimeSpan.FromMinutes(2), cancellationToken.Token);
                 }
                 catch (OperationCanceledException)
                 {
+                    mediaCapture.Dispose();
                     IsStarted = false;
                     this.StartButton.Content = "Start";
                 }
@@ -101,10 +81,44 @@ namespace IsItClosed
 
         }
 
-        private async void takePhoto_Click(object sender, TextChangedEventArgs e)
+        private async Task<bool> CreateMediaCapture()
         {
+            mediaCapture = new MediaCapture();
+            await mediaCapture.InitializeAsync();
+            if (mediaCapture.VideoDeviceController.ExposurePriorityVideoControl.Supported)
+            {
+                mediaCapture.VideoDeviceController.ExposurePriorityVideoControl.Enabled = true;
+                mediaCapture.VideoDeviceController.FlashControl.Auto = true;
 
-            photoFile = await KnownFolders.PicturesLibrary.CreateFileAsync(
+            }
+            mediaCapture.VideoDeviceController.BacklightCompensation.TrySetAuto(true);
+            mediaCapture.VideoDeviceController.Exposure.TrySetAuto(true);
+            mediaCapture.VideoDeviceController.Brightness.TrySetAuto(true);
+            mediaCapture.VideoDeviceController.Contrast.TrySetAuto(true);
+            if (mediaCapture.VideoDeviceController.ExposureControl.Supported)
+            {
+                await mediaCapture.VideoDeviceController.ExposureControl.SetAutoAsync(true);
+            }
+            mediaCapture.VideoDeviceController.Focus.TrySetAuto(true);
+            mediaCapture.VideoDeviceController.WhiteBalance.TrySetAuto(true);
+
+            if (mediaCapture.VideoDeviceController.FlashControl.Supported)
+            {
+                mediaCapture.VideoDeviceController.FlashControl.Auto = true;
+            }
+
+            return true;
+        }
+
+        private async Task<bool> TakePhoto_Click(object sender, TextChangedEventArgs e)
+        {
+            var files = await KnownFolders.PicturesLibrary.GetFilesAsync();
+            var one = files.FirstOrDefault(x => x.Name == PHOTO_FILE_NAME);
+            if (one != null)
+            {
+                await one.DeleteAsync();
+            }
+            StorageFile photoFile = await KnownFolders.PicturesLibrary.CreateFileAsync(
                 PHOTO_FILE_NAME, CreationCollisionOption.ReplaceExisting);
             ImageEncodingProperties imageProperties = ImageEncodingProperties.CreateJpeg();
             await mediaCapture.CapturePhotoToStorageFileAsync(imageProperties, photoFile);
@@ -119,6 +133,8 @@ namespace IsItClosed
             {
                 await UploadFileToStorage(photoStream2, PHOTO_FILE_NAME);
             }
+
+            return true;
         }
 
         public static async Task<bool> UploadFileToStorage(Stream fileStream, string fileName)
